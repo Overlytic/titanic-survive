@@ -30,8 +30,8 @@ perc_survived = num_survived / num_passengers
 
 print('Passengers: ',num_passengers,' Survived: ', num_survived, '  Perc: ', perc_survived*100, '%')
 
-males_list=data[0::,4] == 'male'
 females_list=data[0::,4] == 'female'
+males_list=data[0::,4] != 'female'
 
 data_male = data[males_list,1].astype(np.float)		#survived column
 data_female = data[females_list,1].astype(np.float) #survived column
@@ -46,7 +46,52 @@ print('Males Survived Proportion: ', prop_male_surv)
 print('Females Survived Proportion: ', prop_female_surv)
 
 
-##test file - gender model##
+#gender class fare model 
+
+fare_ceiling = 40
+
+data[ data[0::,9].astype(np.float) >= fare_ceiling,9] = fare_ceiling - 1.0 #limits everything to the fare_ceiling
+
+fare_bracket_size = 10
+number_of_price_brackets = round(fare_ceiling / fare_bracket_size)
+
+number_of_classes = 3
+number_of_classes = len(np.unique(data[0::,2]))		#better. len gives number of rows. 
+													#normal size gives numb elements. could also do: np.size(X,0) for rows
+
+survival_table = np.zeros((2,number_of_classes,number_of_price_brackets))
+
+for i in range(number_of_classes):																#xrange renamed to range in python3
+	for j in range(number_of_price_brackets):
+
+		women_only_stats = data[ (data[0::,4] == 'female') & 
+								 (data[0::,2].astype(np.float) == i+1) &
+								 (data[0::,9].astype(np.float) >= j*fare_bracket_size) &
+								 (data[0::,9].astype(np.float) < (j+1)*fare_bracket_size)
+								 ,1] 															#survival column only
+
+
+		men_only_stats = 	data[(data[0::,4] != 'female') & 
+								 (data[0::,2].astype(np.float) == i+1) &
+								 (data[0::,9].astype(np.float) >= j*fare_bracket_size) &
+								 (data[0::,9].astype(np.float) < (j+1)*fare_bracket_size)
+								 ,1] 															#survival column only
+
+
+		survival_table[0,i,j] = np.mean(women_only_stats.astype(np.float)) #same as sum/size
+		survival_table[1,i,j] = np.mean(men_only_stats.astype(np.float)) #same as sum/size
+
+survival_table[survival_table != survival_table] = 0	#sets all nan values to 0
+
+print(survival_table)
+
+survival_table[survival_table < 0.5] = 0
+survival_table[survival_table >= 0.5] = 1
+
+print(survival_table)
+
+	
+##test file - gender class fare model##
 
 with open('test.csv') as test_file:
 	test_reader = csv.reader(test_file)
@@ -55,17 +100,27 @@ with open('test.csv') as test_file:
 	print('header_test_file: ', header2)	
 
 	#gender model output
-	with open('tinus_gender_model.csv','w') as predict_file:
+	with open('tinus_gender_class_model.csv','w') as predict_file:
 		predict_writer = csv.writer(predict_file)
 		predict_writer.writerow(['PassengerId', 'Survived'])
 
 		for row in test_reader:
-			 if row[3] == "male": #gender column
-			 	predict_writer.writerow([row[0], '0'])
-			 else:
-			 	predict_writer.writerow([row[0], '1'])
+			for j in range(number_of_price_brackets):
+				try:
+					row[8]=float(row[8])	#some passengers have no fare data. So try to make a float. If fail... no data.
+				except:
+					bin_fare = 3 - float(row[1])	#if no fare info, bin according to class. first class will generally have a higher fare. 
+					break
+				if row[8] > fare_ceiling:
+					bin_fare = number_of_price_brackets-1
+					break
+				if row[8] >= j * fare_bracket_size and row[8] < (j+1) * fare_bracket_size:
+					bin_fare = j
+					break
+	
+			#fare will now be binned.
 
-
-
-
-
+			if row[3] == "female": #gender column
+			 	predict_writer.writerow([row[0], '%d' % int(survival_table[0,float(row[1])-1,bin_fare])])
+			else:
+			 	predict_writer.writerow([row[0], '%d' % int(survival_table[1,float(row[1])-1,bin_fare])])	
