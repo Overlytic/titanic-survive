@@ -1,3 +1,5 @@
+#Python 2.7
+
 import pandas as pd
 import numpy as np
 from matplotlib import pyplot
@@ -143,6 +145,7 @@ print df.dtypes[df.dtypes.map(lambda x: x=='object')]
 
 df = df.drop(['Name','Sex','Ticket','Cabin','Embarked'], axis=1) #axis=1 means columns... 0 are rows..
 df = df.drop(['Age'], axis=1)
+df = df.drop(['PassengerId'], axis=1)
 
 
 print '------------------'
@@ -158,3 +161,53 @@ print "Final Numpy array"
 print '------------------'
 print train_data
 
+
+## Test Data ##
+
+testdf = pd.read_csv('test.csv', header=0)
+
+print '------------------'
+print "Test Data"
+print '------------------'
+
+print testdf.dtypes
+print testdf.describe()
+
+#Fix testdf
+
+testdf['Gender'] = testdf['Sex'].map({'female': 0, 'male': 1}).astype(int)
+
+for i in range(0,2):				#note the end point is not included
+	for j in range(0,3):
+		testdf.loc[(testdf.Age.isnull()) & (testdf.Gender == i) & (testdf.Pclass == j+1),'AgeFill'] = /
+			median_ages[i,j]
+
+testdf['AgeIsNull'] = pd.isnull(testdf.Age).astype(int)
+testdf['FamilySize'] = testdf['SibSp'] + testdf['Parch']
+testdf['Age*Class'] = testdf.AgeFill * testdf.Pclass
+testdf = testdf.drop(['Name','Sex','Ticket','Cabin','Embarked','Age','PassengerId'], axis=1)
+
+print '------------------'
+print "Cleaned Test Data"
+print '------------------'
+
+print testdf.describe()
+test_data = testdf.values
+
+#### Random Forest ####
+
+print '------------------'
+print "Random Forest"
+print '------------------'
+
+from sklearn.ensemble import RandomForestClassifier
+
+#create random forest object... including param for fit
+forest = RandomForestClassifier(n_estimators = 100)
+
+# Fit the training data to the survived labels and create the decision trees
+# first column is passenger id... second column is the survived column, rest is the passenger data
+forest = forest.fit(train_data[0::,1::], train_data[0::,0])
+
+# Take the same decision trees and run it on the test data
+output = forest.predict(test_data)
