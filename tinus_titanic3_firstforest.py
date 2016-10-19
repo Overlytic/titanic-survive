@@ -61,13 +61,13 @@ print df[df['Age'] > 60][['Sex', 'Pclass','Age','Survived']]
 print '------------------'
 print "df['Age'].hist()"
 print '------------------'
-df['Age'].hist()
+#df['Age'].hist()
 #pyplot.show()
 
 print '------------------'
 print "df['Age'].dropna().hist(bins=16, range=(0,80), alpha = .5)"
 print '------------------'
-df['Age'].dropna().hist(bins=16, range=(0,80), alpha = .5)
+#df['Age'].dropna().hist(bins=16, range=(0,80), alpha = .5)
 #pyplot.show()
 
 # The Data cleaning Starts....
@@ -176,15 +176,26 @@ print testdf.describe()
 #Fix testdf
 
 testdf['Gender'] = testdf['Sex'].map({'female': 0, 'male': 1}).astype(int)
+testdf['AgeFill'] = testdf['Age']
 
 for i in range(0,2):				#note the end point is not included
 	for j in range(0,3):
-		testdf.loc[(testdf.Age.isnull()) & (testdf.Gender == i) & (testdf.Pclass == j+1),'AgeFill'] = /
+		testdf.loc[(testdf.Age.isnull()) & (testdf.Gender == i) & (testdf.Pclass == j+1),'AgeFill'] = \
 			median_ages[i,j]
+
+
+#testdf['Fare'].hist() --> very skew.. rather use mean
+#pyplot.show()
+
+testdf.loc[testdf['Fare'].isnull(),'Fare'] = testdf['Fare'].median()
+#testdf['FareFill'] = testdf['Fare']
+#testdf.loc[testdf['Fare'].isnull(),'FareFill'] = testdf['Fare'].median()
+#testdf['FareIsNull'] = pd.isnull(testdf.Fare).astype(int)
 
 testdf['AgeIsNull'] = pd.isnull(testdf.Age).astype(int)
 testdf['FamilySize'] = testdf['SibSp'] + testdf['Parch']
 testdf['Age*Class'] = testdf.AgeFill * testdf.Pclass
+PassengerIds = testdf['PassengerId']
 testdf = testdf.drop(['Name','Sex','Ticket','Cabin','Embarked','Age','PassengerId'], axis=1)
 
 print '------------------'
@@ -211,3 +222,22 @@ forest = forest.fit(train_data[0::,1::], train_data[0::,0])
 
 # Take the same decision trees and run it on the test data
 output = forest.predict(test_data)
+
+print output
+
+print type(PassengerIds.values), np.size(PassengerIds.values)
+print type(output), np.size(output)
+output_array = np.column_stack((PassengerIds.values, output))
+
+outputdf = pd.DataFrame(output_array,columns=['PassengerId','Survived'])
+
+print outputdf.head(10)
+print outputdf.describe()
+
+outputdf[['PassengerId','Survived']].to_csv('predicted.csv', \
+		 index=False,float_format='%.0f')
+#Outputdf = pd.series([PassengerIds.values output],index=['PassengerIds', 'Survived'])
+
+#print output_array
+#output_array.tofile('predicted.csv',sep=',',format='%10.0f')
+#np.savetxt('predicted.csv',output_array,comments='')
