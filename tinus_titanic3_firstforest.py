@@ -61,8 +61,8 @@ print df[df['Age'] > 60][['Sex', 'Pclass','Age','Survived']]
 print '------------------'
 print "df['Age'].hist()"
 print '------------------'
-#df['Age'].hist()
-#pyplot.show()
+df['Age'].hist()
+pyplot.show()
 
 print '------------------'
 print "df['Age'].dropna().hist(bins=16, range=(0,80), alpha = .5)"
@@ -241,3 +241,6 @@ outputdf[['PassengerId','Survived']].to_csv('predicted.csv', \
 #print output_array
 #output_array.tofile('predicted.csv',sep=',',format='%10.0f')
 #np.savetxt('predicted.csv',output_array,comments='')
+
+
+#hello
